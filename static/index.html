@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LookMatch</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #111113;
+    --bg-panel: #1a1a1e;
+    --bg-card: #222228;
+    --bg-hover: #2a2a32;
+    --border: #333340;
+    --border-active: #d4883a;
+    --accent: #d4883a;
+    --accent-glow: rgba(212, 136, 58, 0.15);
+    --accent-hover: #e09a4e;
+    --text: #e8e4df;
+    --text-dim: #8a8690;
+    --text-muted: #5c5860;
+    --success: #5cb87a;
+    --error: #d44a4a;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* --- Header --- */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .logo h1 span { color: var(--accent); }
+  .header-actions {
+    display: flex; gap: 10px; align-items: center;
+  }
+
+  /* --- Buttons --- */
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn:hover { background: var(--bg-hover); border-color: var(--text-muted); }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #111;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .btn-sm { font-size: 12px; padding: 6px 12px; }
+  .btn-danger { color: var(--error); }
+  .btn-danger:hover { border-color: var(--error); }
+
+  /* --- Main Layout --- */
+  .main {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    min-height: calc(100vh - 73px);
+  }
+
+  /* --- Sidebar --- */
+  .sidebar {
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  /* --- Drop Zones --- */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .drop-zone.has-image {
+    border-style: solid;
+    border-color: var(--border);
+    padding: 10px;
+  }
+  .drop-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    color: var(--text-dim);
+  }
+  .drop-text {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .drop-text strong { color: var(--accent); }
+  .drop-preview {
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .drop-preview img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+  }
+  .drop-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    word-break: break-all;
+  }
+  .drop-dims {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  /* --- Controls --- */
+  .controls-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .control-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+  }
+  .control-value {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-size: 11px;
+  }
+  .method-toggle {
+    display: flex;
+    background: var(--bg-deep);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .method-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .method-btn.active {
+    background: var(--accent);
+    color: #111;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-deep);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg-panel);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  /* --- Content Area --- */
+  .content {
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .target-count {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .target-count strong {
+    color: var(--text);
+  }
+
+  /* --- Target Grid --- */
+  .targets-drop {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    min-height: 300px;
+    transition: all 0.2s;
+    padding: 20px;
+  }
+  .targets-drop.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .targets-drop.has-items {
+    border: none;
+    padding: 0;
+  }
+  .targets-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    gap: 12px;
+  }
+  .target-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .target-card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: border-color 0.15s;
+  }
+  .target-card:hover {
+    border-color: var(--text-muted);
+  }
+  .card-image-wrap {
+    position: relative;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    background: var(--bg-deep);
+  }
+  .card-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  /* Before/After slider */
+  .comparison-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .comparison-container img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .img-matched {
+    clip-path: inset(0 50% 0 0);
+  }
+  .comparison-slider {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 3px;
+    height: 100%;
+    background: var(--accent);
+    cursor: ew-resize;
+    z-index: 10;
+    transform: translateX(-50%);
+  }
+  .comparison-slider::after {
+    content: '⟷';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #111;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .comparison-label {
+    position: absolute;
+    bottom: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.6);
+    color: var(--text);
+    z-index: 5;
+    pointer-events: none;
+  }
+  .label-before { left: 8px; }
+  .label-after { right: 8px; }
+
+  .card-info {
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+  .card-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .card-status {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .status-uploading { color: var(--accent); background: var(--accent-glow); }
+  .status-ready { color: var(--success); background: rgba(92, 184, 122, 0.12); }
+  .status-matched { color: var(--accent); background: var(--accent-glow); }
+
+  /* --- Export Modal --- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    width: 420px;
+    max-width: 90vw;
+  }
+  .modal h2 {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+  .export-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: all 0.15s;
+  }
+  .export-option:hover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .export-option .eo-icon {
+    font-size: 24px;
+    width: 40px;
+    text-align: center;
+  }
+  .export-option .eo-text h4 {
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+  .export-option .eo-text p {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* --- Progress --- */
+  .progress-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--bg-deep);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  /* --- Toast --- */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toast {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: slideIn 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toast.success { border-color: var(--success); }
+  .toast.error { border-color: var(--error); }
+  @keyframes slideIn {
+    from { transform: translateX(40px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* --- Processing overlay --- */
+  .processing-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 150;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: blur(6px);
+  }
+  .processing-overlay.active { display: flex; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .processing-text {
+    font-size: 15px;
+    color: var(--text);
+  }
+  .processing-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* Film Stock Panel */
+  .film-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .film-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+    background: var(--bg-card);
+    user-select: none;
+  }
+  .film-panel-header:hover { background: var(--bg-hover); }
+  .film-panel-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .film-panel-title .film-active-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    display: none;
+  }
+  .film-panel-title .film-active-badge.visible { display: inline; }
+  .film-panel-chevron {
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+  .film-panel-chevron.open { transform: rotate(180deg); }
+  .film-panel-body {
+    display: none;
+    padding: 14px;
+    border-top: 1px solid var(--border);
+    flex-direction: column;
+    gap: 12px;
+  }
+  .film-panel-body.open {
+    display: flex;
+  }
+  .film-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .film-chip {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg-deep);
+  }
+  .film-chip:hover { border-color: var(--accent); background: var(--accent-glow); }
+  .film-chip.selected {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .film-chip-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .film-chip-desc {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .film-chip-bw { border-left: 3px solid var(--text-muted); }
+  .film-chip-bw.selected { border-left-color: var(--accent); }
+
+  /* Adjustments Panel */
+  .adj-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .adj-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+    background: var(--bg-card);
+    user-select: none;
+  }
+  .adj-panel-header:hover { background: var(--bg-hover); }
+  .adj-panel-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .adj-active-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: none;
+  }
+  .adj-active-dot.visible { display: inline-block; }
+  .adj-panel-body {
+    display: none;
+    padding: 14px;
+    border-top: 1px solid var(--border);
+    flex-direction: column;
+    gap: 0;
+  }
+  .adj-panel-body.open { display: flex; }
+  .adj-section-divider {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    padding: 10px 0 6px;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+  .adj-section-divider:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+  .adj-row {
+    display: grid;
+    grid-template-columns: 68px 1fr 38px;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .adj-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+  }
+  .adj-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    text-align: right;
+    cursor: pointer;
+  }
+  .adj-value:hover { color: var(--accent-hover); }
+  input[type="range"].adj-slider {
+    height: 4px;
+  }
+  input[type="range"].adj-slider::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+  }
+  .adj-footer {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Film param sliders (inside film panel) */
+  .film-params {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .film-params.visible { display: flex; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* Hidden file input */
+  .hidden-input { display: none; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">◐</div>
+    <h1>Look<span>Match</span></h1>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="saveProfile()" id="saveProfileBtn" title="Save reference look as profile">
+      ⬇ Save Profile
+    </button>
+    <button class="btn btn-danger" onclick="clearAll()">✕ Clear All</button>
+  </div>
+</div>
+
+<!-- Main Layout -->
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <!-- Reference Zone -->
+    <div>
+      <div class="section-label">Reference Photo</div>
+      <div class="drop-zone" id="refZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'reference')" onclick="document.getElementById('refInput').click()">
+        <div class="drop-icon">📷</div>
+        <div class="drop-text">Drop your <strong>reference</strong> photo here<br>or click to browse</div>
+        <div class="drop-dims">CR3 · ARW · DNG · TIFF · JPEG · PNG</div>
+      </div>
+      <input type="file" class="hidden-input" id="refInput" accept=".cr3,.arw,.nef,.dng,.tif,.tiff,.jpg,.jpeg,.png,.CR3,.ARW,.NEF,.DNG" onchange="handleFileSelect(event, 'reference')">
+    </div>
+
+    <!-- Controls -->
+    <div>
+      <div class="section-label">Matching Controls</div>
+      <div class="controls-group">
+        <div class="control-row">
+          <div class="control-label">Method</div>
+          <div class="method-toggle">
+            <button class="method-btn active" data-method="reinhard" onclick="setMethod(this)">Reinhard</button>
+            <button class="method-btn" data-method="histogram" onclick="setMethod(this)">Histogram</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <div class="control-label">
+            Strength
+            <span class="control-value" id="strengthVal">85%</span>
+          </div>
+          <input type="range" id="strengthSlider" min="0" max="100" value="85" oninput="document.getElementById('strengthVal').textContent = this.value + '%'">
+        </div>
+      </div>
+    </div>
+
+    <!-- Film Stock -->
+    <div>
+      <div class="section-label">Film Emulation</div>
+      <div class="film-panel">
+        <div class="film-panel-header" onclick="toggleFilmPanel()">
+          <div class="film-panel-title">
+            🎞 Film Stock
+            <span class="film-active-badge" id="filmActiveBadge">active</span>
+          </div>
+          <span class="film-panel-chevron" id="filmChevron">▼</span>
+        </div>
+        <div class="film-panel-body" id="filmPanelBody">
+          <div class="film-grid" id="filmGrid">
+            <!-- populated by JS -->
+          </div>
+          <div class="control-row" id="filmStrengthRow" style="display:none;">
+            <div class="control-label">
+              Film Strength
+              <span class="control-value" id="filmStrengthVal">100%</span>
+            </div>
+            <input type="range" id="filmStrengthSlider" min="0" max="100" value="100"
+              oninput="document.getElementById('filmStrengthVal').textContent = this.value + '%'">
+          </div>
+          <!-- Film parameter overrides (shown after a stock is selected) -->
+          <div class="film-params" id="filmParams">
+            <div class="adj-section-divider">Adjust Stock</div>
+            <div class="adj-row">
+              <span class="adj-label">Grain</span>
+              <input type="range" class="adj-slider" id="fp_grain_amount" min="0" max="60" value="14"
+                oninput="updateFilmParamVal('grain_amount', this.value)">
+              <span class="adj-value" id="fp_grain_amount_val" onclick="resetFilmParam('grain_amount')">14</span>
+            </div>
+            <div class="adj-row">
+              <span class="adj-label">Grain Size</span>
+              <input type="range" class="adj-slider" id="fp_grain_size" min="5" max="30" value="12"
+                oninput="updateFilmParamVal('grain_size', this.value / 10)">
+              <span class="adj-value" id="fp_grain_size_val" onclick="resetFilmParam('grain_size')">1.2</span>
+            </div>
+            <div class="adj-row">
+              <span class="adj-label">Roughness</span>
+              <input type="range" class="adj-slider" id="fp_grain_roughness" min="0" max="100" value="0"
+                oninput="updateFilmParamVal('grain_roughness', this.value / 100)">
+              <span class="adj-value" id="fp_grain_roughness_val" onclick="resetFilmParam('grain_roughness')">0.00</span>
+            </div>
+            <div class="adj-row">
+              <span class="adj-label">Fade</span>
+              <input type="range" class="adj-slider" id="fp_fade" min="0" max="40" value="6"
+                oninput="updateFilmParamVal('fade', this.value)">
+              <span class="adj-value" id="fp_fade_val" onclick="resetFilmParam('fade')">6</span>
+            </div>
+            <div class="adj-row">
+              <span class="adj-label">Contrast</span>
+              <input type="range" class="adj-slider" id="fp_contrast" min="80" max="130" value="103"
+                oninput="updateFilmParamVal('contrast', this.value / 100)">
+              <span class="adj-value" id="fp_contrast_val" onclick="resetFilmParam('contrast')">1.03</span>
+            </div>
+            <div class="adj-row">
+              <span class="adj-label">Saturation</span>
+              <input type="range" class="adj-slider" id="fp_saturation" min="0" max="200" value="88"
+                oninput="updateFilmParamVal('saturation', this.value / 100)">
+              <span class="adj-value" id="fp_saturation_val" onclick="resetFilmParam('saturation')">0.88</span>
+            </div>
+            <div class="adj-row" id="fp_halation_row">
+              <span class="adj-label">Halation</span>
+              <input type="range" class="adj-slider" id="fp_halation" min="0" max="40" value="0"
+                oninput="updateFilmParamVal('halation', this.value)">
+              <span class="adj-value" id="fp_halation_val" onclick="resetFilmParam('halation')">0</span>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:6px; margin-top:10px;">
+            <button class="btn btn-primary btn-sm" id="applyFilmBtn" onclick="applyFilm()" style="flex:1; justify-content:center;" disabled>
+              Apply Film
+            </button>
+            <button class="btn btn-sm" id="exportFilmLutBtn" onclick="exportFilmLutDirect()" style="display:none;" title="Export film stock as .cube LUT">
+              ⬇ LUT
+            </button>
+            <button class="btn btn-sm btn-danger" id="clearFilmBtn" onclick="clearFilm()" style="display:none;" title="Remove film">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Basic Adjustments -->
+    <div>
+      <div class="section-label">Basic Adjustments</div>
+      <div class="adj-panel">
+        <div class="adj-panel-header" onclick="toggleAdjPanel()">
+          <div class="adj-panel-title">
+            🎚 Light &amp; Color
+            <span class="adj-active-dot" id="adjActiveDot"></span>
+          </div>
+          <span class="film-panel-chevron" id="adjChevron">▼</span>
+        </div>
+        <div class="adj-panel-body" id="adjPanelBody">
+
+          <div class="adj-section-divider">White Balance</div>
+          <div class="adj-row">
+            <span class="adj-label">Temp</span>
+            <input type="range" class="adj-slider" id="adj_temp" min="-100" max="100" value="0"
+              oninput="onAdjChange('temp', this.value)">
+            <span class="adj-value" id="adj_temp_val" onclick="resetAdj('temp')">0</span>
+          </div>
+          <div class="adj-row">
+            <span class="adj-label">Tint</span>
+            <input type="range" class="adj-slider" id="adj_tint" min="-100" max="100" value="0"
+              oninput="onAdjChange('tint', this.value)">
+            <span class="adj-value" id="adj_tint_val" onclick="resetAdj('tint')">0</span>
+          </div>
+
+          <div class="adj-section-divider">Tone</div>
+          <div class="adj-row">
+            <span class="adj-label">Exposure</span>
+            <input type="range" class="adj-slider" id="adj_exposure" min="-500" max="500" value="0"
+              oninput="onAdjChange('exposure', this.value / 100)">
+            <span class="adj-value" id="adj_exposure_val" onclick="resetAdj('exposure')">0.00</span>
+          </div>
+          <div class="adj-row">
+            <span class="adj-label">Contrast</span>
+            <input type="range" class="adj-slider" id="adj_contrast" min="-100" max="100" value="0"
+              oninput="onAdjChange('contrast', this.value)">
+            <span class="adj-value" id="adj_contrast_val" onclick="resetAdj('contrast')">0</span>
+          </div>
+          <div class="adj-row">
+            <span class="adj-label">Highlights</span>
+            <input type="range" class="adj-slider" id="adj_highlights" min="-100" max="100" value="0"
+              oninput="onAdjChange('highlights', this.value)">
+            <span class="adj-value" id="adj_highlights_val" onclick="resetAdj('highlights')">0</span>
+          </div>
+          <div class="adj-row">
+            <span class="adj-label">Shadows</span>
+            <input type="range" class="adj-slider" id="adj_shadows" min="-100" max="100" value="0"
+              oninput="onAdjChange('shadows', this.value)">
+            <span class="adj-value" id="adj_shadows_val" onclick="resetAdj('shadows')">0</span>
+          </div>
+          <div class="adj-row">
+            <span class="adj-label">Whites</span>
+            <input type="range" class="adj-slider" id="adj_whites" min="-100" max="100" value="0"
+              oninput="onAdjChange('whites', this.value)">
+            <span class="adj-value" id="adj_whites_val" onclick="resetAdj('whites')">0</span>
+          </div>
+          <div class="adj-row">
+            <span class="adj-label">Blacks</span>
+            <input type="range" class="adj-slider" id="adj_blacks" min="-100" max="100" value="0"
+              oninput="onAdjChange('blacks', this.value)">
+            <span class="adj-value" id="adj_blacks_val" onclick="resetAdj('blacks')">0</span>
+          </div>
+
+          <div class="adj-section-divider">Presence</div>
+          <div class="adj-row">
+            <span class="adj-label">Texture</span>
+            <input type="range" class="adj-slider" id="adj_texture" min="-100" max="100" value="0"
+              oninput="onAdjChange('texture', this.value)">
+            <span class="adj-value" id="adj_texture_val" onclick="resetAdj('texture')">0</span>
+          </div>
+          <div class="adj-row">
+            <span class="adj-label">Clarity</span>
+            <input type="range" class="adj-slider" id="adj_clarity" min="-100" max="100" value="0"
+              oninput="onAdjChange('clarity', this.value)">
+            <span class="adj-value" id="adj_clarity_val" onclick="resetAdj('clarity')">0</span>
+          </div>
+          <div class="adj-row">
+            <span class="adj-label">Vibrance</span>
+            <input type="range" class="adj-slider" id="adj_vibrance" min="-100" max="100" value="0"
+              oninput="onAdjChange('vibrance', this.value)">
+            <span class="adj-value" id="adj_vibrance_val" onclick="resetAdj('vibrance')">0</span>
+          </div>
+          <div class="adj-row">
+            <span class="adj-label">Saturation</span>
+            <input type="range" class="adj-slider" id="adj_saturation" min="-100" max="100" value="0"
+              oninput="onAdjChange('saturation', this.value)">
+            <span class="adj-value" id="adj_saturation_val" onclick="resetAdj('saturation')">0</span>
+          </div>
+
+          <div class="adj-footer">
+            <button class="btn btn-primary btn-sm" onclick="applyAdjustments()" style="flex:1; justify-content:center;">
+              Apply
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="resetAllAdj()" title="Reset all to zero">Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+      <button class="btn btn-primary" id="matchBtn" onclick="runMatch()" disabled style="width:100%; justify-content:center;">
+        ◉ Match All Photos
+      </button>
+      <button class="btn" id="exportBtn" onclick="openExportModal()" disabled style="width:100%; justify-content:center;">
+        ⬆ Export All
+      </button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="content-header">
+      <div>
+        <div class="target-count">
+          Target Photos: <strong id="targetCountNum">0</strong>
+        </div>
+      </div>
+      <button class="btn btn-sm" onclick="document.getElementById('targetInput').click()">+ Add Photos</button>
+      <input type="file" class="hidden-input" id="targetInput" multiple accept=".cr3,.arw,.nef,.dng,.tif,.tiff,.jpg,.jpeg,.png,.CR3,.ARW,.NEF,.DNG" onchange="handleFileSelect(event, 'target')">
+    </div>
+
+    <div class="targets-drop" id="targetsZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'target')">
+      <div class="targets-empty" id="targetsEmpty">
+        <div class="drop-icon" style="width:56px;height:56px;font-size:24px;">📸</div>
+        <div class="drop-text" style="font-size:15px;">Drop your <strong>target photos</strong> here</div>
+        <div class="drop-dims">Drag multiple files — CR3, ARW, DNG, TIFF, JPEG, PNG</div>
+      </div>
+      <div class="target-grid" id="targetGrid" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <h2>Export Matched Photos</h2>
+
+    <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:8px;">Images</div>
+    <div class="export-option" onclick="exportAll('jpeg')">
+      <div class="eo-icon">🖼</div>
+      <div class="eo-text">
+        <h4>JPEG (sRGB)</h4>
+        <p>Full resolution, quality 95 — ready to deliver</p>
+      </div>
+    </div>
+    <div class="export-option" onclick="exportAll('tiff')">
+      <div class="eo-icon">📐</div>
+      <div class="eo-text">
+        <h4>TIFF (16-bit)</h4>
+        <p>Maximum quality for further editing</p>
+      </div>
+    </div>
+    <div class="export-option" onclick="exportAll('layered_tiff')">
+      <div class="eo-icon">🗂</div>
+      <div class="eo-text">
+        <h4>Layered TIFF (Photoshop)</h4>
+        <p>Original + matched as layers — blend & mask in PS</p>
+      </div>
+    </div>
+
+    <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin:16px 0 8px;">LUTs for Lightroom / DaVinci / Premiere</div>
+    <div class="export-option" onclick="exportLut()" id="exportLutOption">
+      <div class="eo-icon">🎨</div>
+      <div class="eo-text">
+        <h4>Color Grade LUT (.cube)</h4>
+        <p id="exportLutDesc">Export the color match as a 3D LUT — import into Lightroom, DaVinci, Premiere</p>
+      </div>
+    </div>
+    <div class="export-option" onclick="exportFilmLut()" id="exportFilmLutOption" style="display:none;">
+      <div class="eo-icon">🎞</div>
+      <div class="eo-text">
+        <h4>Film Stock LUT (.cube)</h4>
+        <p id="exportFilmLutDesc">Export the film color grade as a standalone LUT (grain excluded)</p>
+      </div>
+    </div>
+
+    <div style="text-align:right; margin-top:18px;">
+      <button class="btn" onclick="closeExportModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Processing Overlay -->
+<div class="processing-overlay" id="processingOverlay">
+  <div class="spinner"></div>
+  <div class="processing-text" id="processingText">Processing...</div>
+  <div class="processing-sub" id="processingSub">This may take a moment for large RAW files</div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  // --- State ---
+  let currentMethod = 'reinhard';
+  let targets = [];
+  let hasReference = false;
+  let hasMatched = false;
+  let selectedFilmStock = null;
+  let activeFilmStock = null;
+  let filmStocks = {};
+  let filmPanelOpen = false;
+
+  // --- Film Stock Init ---
+  async function initFilmStocks() {
+    try {
+      const resp = await fetch('/film-stocks');
+      filmStocks = await resp.json();
+      renderFilmGrid();
+    } catch(e) { console.error('Could not load film stocks', e); }
+  }
+
+  function renderFilmGrid() {
+    const grid = document.getElementById('filmGrid');
+    grid.innerHTML = '';
+    for (const [id, stock] of Object.entries(filmStocks)) {
+      const chip = document.createElement('div');
+      chip.className = 'film-chip' + (stock.bw ? ' film-chip-bw' : '');
+      chip.id = `film-chip-${id}`;
+      chip.innerHTML = `
+        <div class="film-chip-name">${stock.name}</div>
+        <div class="film-chip-desc">${stock.description}</div>
+      `;
+      chip.onclick = () => selectFilmStock(id);
+      grid.appendChild(chip);
+    }
+  }
+
+  function selectFilmStock(id) {
+    selectedFilmStock = id;
+    document.querySelectorAll('.film-chip').forEach(c => c.classList.remove('selected'));
+    const chip = document.getElementById(`film-chip-${id}`);
+    if (chip) chip.classList.add('selected');
+    document.getElementById('filmStrengthRow').style.display = 'flex';
+    document.getElementById('applyFilmBtn').disabled = false;
+  }
+
+  function toggleFilmPanel() {
+    filmPanelOpen = !filmPanelOpen;
+    const body = document.getElementById('filmPanelBody');
+    const chevron = document.getElementById('filmChevron');
+    body.classList.toggle('open', filmPanelOpen);
+    chevron.classList.toggle('open', filmPanelOpen);
+  }
+
+  async function applyFilm() {
+    if (!selectedFilmStock || targets.length === 0) return;
+    const strength = document.getElementById('filmStrengthSlider').value;
+    showProcessing('Applying film stock...', filmStocks[selectedFilmStock]?.name || selectedFilmStock);
+
+    const formData = new FormData();
+    formData.append('stock', selectedFilmStock);
+    formData.append('strength', strength);
+
+    try {
+      const resp = await fetch('/apply-film', { method: 'POST', body: formData });
+      if (!resp.ok) throw new Error('Film apply failed');
+      const data = await resp.json();
+
+      data.results.forEach(r => {
+        if (r.error) { toast(`Error: ${r.error}`, 'error'); return; }
+        const card = document.getElementById(`card-${r.id}`);
+        if (card) {
+          const container = card.querySelector('.comparison-container');
+          if (container) {
+            // Update the matched (right) side with film preview
+            const matchedImg = container.querySelector('.img-matched');
+            if (matchedImg) matchedImg.src = r.film_preview + '?t=' + Date.now();
+          } else {
+            // No match yet — just show film on original
+            const imgWrap = card.querySelector('.card-image-wrap');
+            if (imgWrap) {
+              const img = imgWrap.querySelector('img');
+              if (img) img.src = r.film_preview + '?t=' + Date.now();
+            }
+          }
+        }
+      });
+
+      activeFilmStock = selectedFilmStock;
+      document.getElementById('filmActiveBadge').classList.add('visible');
+      document.getElementById('clearFilmBtn').style.display = 'inline-flex';
+      document.getElementById('exportFilmLutBtn').style.display = 'inline-flex';
+      updateExportLutOptions();
+      toast(`${data.stock_name} applied`, 'success');
+    } catch(e) {
+      toast(`Film failed: ${e.message}`, 'error');
+    } finally {
+      hideProcessing();
+    }
+  }
+
+  async function clearFilm() {
+    await fetch('/clear-film', { method: 'POST' });
+    activeFilmStock = null;
+    selectedFilmStock = null;
+    document.querySelectorAll('.film-chip').forEach(c => c.classList.remove('selected'));
+    document.getElementById('filmActiveBadge').classList.remove('visible');
+    document.getElementById('clearFilmBtn').style.display = 'none';
+    document.getElementById('exportFilmLutBtn').style.display = 'none';
+    document.getElementById('filmStrengthRow').style.display = 'none';
+    document.getElementById('applyFilmBtn').disabled = true;
+    updateExportLutOptions();
+
+    // Revert card previews to matched (or original)
+    targets.forEach(t => {
+      const card = document.getElementById(`card-${t.id}`);
+      if (!card) return;
+      const container = card.querySelector('.comparison-container');
+      if (container) {
+        const matchedImg = container.querySelector('.img-matched');
+        if (matchedImg && t._matchedPreview) {
+          matchedImg.src = t._matchedPreview + '?t=' + Date.now();
+        }
+      }
+    });
+    toast('Film removed', 'success');
+  }
+
+  function updateExportLutOptions() {
+    const filmLutOption = document.getElementById('exportFilmLutOption');
+    const lutDesc = document.getElementById('exportLutDesc');
+    if (activeFilmStock && filmStocks[activeFilmStock]) {
+      filmLutOption.style.display = 'flex';
+      document.getElementById('exportFilmLutDesc').textContent =
+        `Export ${filmStocks[activeFilmStock].name} color grade as a standalone LUT (grain excluded)`;
+      lutDesc.textContent = 'Export color match + film grade as a combined 3D LUT';
+    } else {
+      filmLutOption.style.display = 'none';
+      lutDesc.textContent = 'Export the color match as a 3D LUT — import into Lightroom, DaVinci, Premiere';
+    }
+  }
+
+  // --- LUT Export ---
+  async function exportLut() {
+    closeExportModal();
+    showProcessing('Building LUT...', 'Generating 33³ .cube file');
+    const formData = new FormData();
+    formData.append('lut_size', '33');
+    try {
+      const resp = await fetch('/export-lut', { method: 'POST', body: formData });
+      if (!resp.ok) throw new Error('LUT export failed');
+      const data = await resp.json();
+      triggerDownload(data.download, data.filename);
+      toast('LUT exported — import into Lightroom via Effects > Color Grading > LUT', 'success');
+    } catch(e) {
+      toast(`LUT export failed: ${e.message}`, 'error');
+    } finally {
+      hideProcessing();
+    }
+  }
+
+  async function exportFilmLut() {
+    if (!activeFilmStock) return;
+    closeExportModal();
+    showProcessing('Building film LUT...', filmStocks[activeFilmStock]?.name || activeFilmStock);
+    const formData = new FormData();
+    formData.append('stock', activeFilmStock);
+    formData.append('strength', document.getElementById('filmStrengthSlider').value);
+    formData.append('lut_size', '33');
+    try {
+      const resp = await fetch('/export-film-lut', { method: 'POST', body: formData });
+      if (!resp.ok) throw new Error('Film LUT export failed');
+      const data = await resp.json();
+      triggerDownload(data.download, data.filename);
+      toast('Film LUT exported!', 'success');
+    } catch(e) {
+      toast(`Film LUT export failed: ${e.message}`, 'error');
+    } finally {
+      hideProcessing();
+    }
+  }
+
+  async function exportFilmLutDirect() {
+    const stock = activeFilmStock || selectedFilmStock;
+    if (!stock) return;
+    showProcessing('Building film LUT...', filmStocks[stock]?.name || stock);
+    const formData = new FormData();
+    formData.append('stock', stock);
+    formData.append('strength', document.getElementById('filmStrengthSlider').value);
+    formData.append('lut_size', '33');
+    try {
+      const resp = await fetch('/export-film-lut', { method: 'POST', body: formData });
+      if (!resp.ok) throw new Error('Film LUT export failed');
+      const data = await resp.json();
+      triggerDownload(data.download, data.filename);
+      toast(`${filmStocks[stock]?.name || stock} LUT downloaded — import into Lightroom via Effects > Color Grading > LUT`, 'success');
+    } catch(e) {
+      toast(`Film LUT export failed: ${e.message}`, 'error');
+    } finally {
+      hideProcessing();
+    }
+  }
+
+  function triggerDownload(url, filename) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  // --- Adjustments Panel ---
+  let adjPanelOpen = false;
+  const ADJ_DEFAULTS = {
+    temp: 0, tint: 0, exposure: 0, contrast: 0,
+    highlights: 0, shadows: 0, whites: 0, blacks: 0,
+    vibrance: 0, saturation: 0, clarity: 0, texture: 0,
+  };
+  let adjValues = { ...ADJ_DEFAULTS };
+  let adjDebounceTimer = null;
+
+  function toggleAdjPanel() {
+    adjPanelOpen = !adjPanelOpen;
+    document.getElementById('adjPanelBody').classList.toggle('open', adjPanelOpen);
+    document.getElementById('adjChevron').classList.toggle('open', adjPanelOpen);
+  }
+
+  function onAdjChange(key, rawVal) {
+    const val = parseFloat(rawVal);
+    adjValues[key] = val;
+    const display = key === 'exposure' ? val.toFixed(2) : Math.round(val);
+    document.getElementById(`adj_${key}_val`).textContent = display;
+    const anyActive = Object.entries(adjValues).some(([,v]) => v !== 0);
+    document.getElementById('adjActiveDot').classList.toggle('visible', anyActive);
+    // Live preview: debounce 350ms
+    clearTimeout(adjDebounceTimer);
+    adjDebounceTimer = setTimeout(() => applyAdjustments(true), 350);
+  }
+
+  function resetAdj(key) {
+    adjValues[key] = 0;
+    const slider = document.getElementById(`adj_${key}`);
+    if (slider) slider.value = 0;
+    document.getElementById(`adj_${key}_val`).textContent = key === 'exposure' ? '0.00' : '0';
+    const anyActive = Object.entries(adjValues).some(([,v]) => v !== 0);
+    document.getElementById('adjActiveDot').classList.toggle('visible', anyActive);
+  }
+
+  function resetAllAdj() {
+    Object.keys(ADJ_DEFAULTS).forEach(k => resetAdj(k));
+  }
+
+  let _adjApplying = false;
+  async function applyAdjustments(silent = false) {
+    if (targets.length === 0) { if (!silent) toast('No target images', 'error'); return; }
+    if (_adjApplying) return; // don't stack requests
+    _adjApplying = true;
+    if (!silent) showProcessing('Applying adjustments...', '');
+    const fd = new FormData();
+    Object.entries(adjValues).forEach(([k, v]) => fd.append(k, v));
+    try {
+      const resp = await fetch('/apply-adjustments', { method: 'POST', body: fd });
+      if (!resp.ok) throw new Error('Failed');
+      const data = await resp.json();
+      data.results.forEach(r => {
+        if (r.error) { if (!silent) toast(`Error: ${r.error}`, 'error'); return; }
+        updateCardPreview(r.id, r.adj_preview);
+      });
+      if (!silent) toast('Adjustments applied', 'success');
+    } catch(e) {
+      if (!silent) toast(`Adjustments failed: ${e.message}`, 'error');
+    } finally {
+      _adjApplying = false;
+      if (!silent) hideProcessing();
+    }
+  }
+
+  // --- Film Param Overrides ---
+  let filmParamDefaults = {};
+  let filmParamValues = {};
+  let filmDebounceTimer = null;
+
+  // Keys that store as decimals (slider value divided by a factor)
+  const FP_DECIMAL_KEYS = {
+    grain_size: 10, contrast: 100, saturation: 100, grain_roughness: 100,
+  };
+
+  function updateFilmParamVal(key, rawVal) {
+    const val = parseFloat(rawVal);
+    filmParamValues[key] = val;
+    const display = FP_DECIMAL_KEYS[key] ? val.toFixed(2) : Math.round(val);
+    document.getElementById(`fp_${key}_val`).textContent = display;
+    // Live preview: debounce 350ms
+    if (selectedFilmStock) {
+      clearTimeout(filmDebounceTimer);
+      filmDebounceTimer = setTimeout(() => applyFilm(true), 350);
+    }
+  }
+
+  function resetFilmParam(key) {
+    if (filmParamDefaults[key] == null) return;
+    filmParamValues[key] = filmParamDefaults[key];
+    const slider = document.getElementById(`fp_${key}`);
+    if (!slider) return;
+    const factor = FP_DECIMAL_KEYS[key];
+    slider.value = factor ? Math.round(filmParamDefaults[key] * factor) : filmParamDefaults[key];
+    updateFilmParamVal(key, filmParamValues[key]);
+  }
+
+  function loadFilmParamDefaults(stockId) {
+    const stock = filmStocks[stockId];
+    if (!stock || !stock.defaults) return;
+    const d = stock.defaults;
+    filmParamDefaults = { ...d };
+    filmParamValues = { ...d };
+
+    const setSlider = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    setSlider('fp_grain_amount',    Math.round(d.grain_amount));
+    setSlider('fp_grain_size',      Math.round(d.grain_size * 10));
+    setSlider('fp_grain_roughness', Math.round((d.grain_roughness ?? 0) * 100));
+    setSlider('fp_fade',            Math.round(d.fade));
+    setSlider('fp_contrast',        Math.round(d.contrast * 100));
+    setSlider('fp_saturation',      Math.round(d.saturation * 100));
+    setSlider('fp_halation',        Math.round(d.halation));
+
+    document.getElementById('fp_grain_amount_val').textContent    = Math.round(d.grain_amount);
+    document.getElementById('fp_grain_size_val').textContent      = d.grain_size.toFixed(1);
+    document.getElementById('fp_grain_roughness_val').textContent = (d.grain_roughness ?? 0).toFixed(2);
+    document.getElementById('fp_fade_val').textContent            = Math.round(d.fade);
+    document.getElementById('fp_contrast_val').textContent        = d.contrast.toFixed(2);
+    document.getElementById('fp_saturation_val').textContent      = d.saturation.toFixed(2);
+    document.getElementById('fp_halation_val').textContent        = Math.round(d.halation);
+
+    document.getElementById('fp_halation_row').style.display = d.halation > 0 ? 'grid' : 'none';
+    document.getElementById('filmParams').classList.add('visible');
+  }
+
+  function syncFilmDefaultsFromResponse(defaults) {
+    if (!defaults) return;
+    const map = {
+      grain_amount: defaults.grain_amount ?? filmParamDefaults.grain_amount,
+      grain_size:   defaults.grain_size   ?? filmParamDefaults.grain_size,
+      fade:         defaults.fade         ?? filmParamDefaults.fade,
+      contrast:     defaults.contrast     ?? filmParamDefaults.contrast,
+      saturation:   defaults.saturation   ?? filmParamDefaults.saturation,
+      halation:     defaults.halation     ?? filmParamDefaults.halation,
+    };
+    filmParamDefaults = { ...map };
+    // Only update sliders if user hasn't already moved them
+    Object.entries(map).forEach(([k, v]) => {
+      if (filmParamValues[k] === undefined) {
+        filmParamValues[k] = v;
+        resetFilmParam(k);
+      }
+    });
+  }
+
+  // Patch selectFilmStock to load defaults
+  const _origSelectFilmStock = selectFilmStock;
+  selectFilmStock = function(id) {
+    _origSelectFilmStock(id);
+    filmParamValues = {};
+    filmParamDefaults = {};
+    loadFilmParamDefaults(id);
+  };
+
+  // Patch applyFilm to send overrides and sync defaults from response
+  const _origApplyFilm = applyFilm;
+  let _filmApplying = false;
+  applyFilm = async function(silent = false) {
+    if (!selectedFilmStock || targets.length === 0) return;
+    if (_filmApplying) return; // don't stack requests
+    _filmApplying = true;
+    const strength = document.getElementById('filmStrengthSlider').value;
+    if (!silent) showProcessing('Applying film stock...', filmStocks[selectedFilmStock]?.name || selectedFilmStock);
+
+    const fd = new FormData();
+    fd.append('stock', selectedFilmStock);
+    fd.append('strength', strength);
+    if (filmParamValues.grain_amount    != null) fd.append('grain_amount',    filmParamValues.grain_amount);
+    if (filmParamValues.grain_size      != null) fd.append('grain_size',      filmParamValues.grain_size);
+    if (filmParamValues.grain_roughness != null) fd.append('grain_roughness', filmParamValues.grain_roughness);
+    if (filmParamValues.fade            != null) fd.append('fade',            filmParamValues.fade);
+    if (filmParamValues.halation        != null) fd.append('halation',        filmParamValues.halation);
+    if (filmParamValues.contrast        != null) fd.append('contrast',        filmParamValues.contrast);
+    if (filmParamValues.saturation      != null) fd.append('saturation_film', filmParamValues.saturation);
+
+    try {
+      const resp = await fetch('/apply-film', { method: 'POST', body: fd });
+      if (!resp.ok) throw new Error('Film apply failed');
+      const data = await resp.json();
+      syncFilmDefaultsFromResponse(data.defaults);
+
+      data.results.forEach(r => {
+        if (r.error) { if (!silent) toast(`Error: ${r.error}`, 'error'); return; }
+        updateCardPreview(r.id, r.film_preview);
+      });
+
+      activeFilmStock = selectedFilmStock;
+      document.getElementById('filmActiveBadge').classList.add('visible');
+      document.getElementById('clearFilmBtn').style.display = 'inline-flex';
+      document.getElementById('exportFilmLutBtn').style.display = 'inline-flex';
+      updateExportLutOptions();
+      if (!silent) toast(`${data.stock_name} applied`, 'success');
+    } catch(e) {
+      if (!silent) toast(`Film failed: ${e.message}`, 'error');
+    } finally {
+      _filmApplying = false;
+      if (!silent) hideProcessing();
+    }
+  };
+
+  // --- Shared card preview updater ---
+  function updateCardPreview(id, previewUrl) {
+    const card = document.getElementById(`card-${id}`);
+    if (!card) return;
+    const url = previewUrl + '?t=' + Date.now();
+    const container = card.querySelector('.comparison-container');
+    if (container) {
+      const matchedImg = container.querySelector('.img-matched');
+      if (matchedImg) matchedImg.src = url;
+    } else {
+      const img = card.querySelector('.card-image-wrap img');
+      if (img) img.src = url;
+    }
+  }
+
+  // Patch clearFilm to also hide film params
+  const _origClearFilm = clearFilm;
+  clearFilm = async function() {
+    await fetch('/clear-film', { method: 'POST' });
+    activeFilmStock = null;
+    selectedFilmStock = null;
+    filmParamValues = {};
+    filmParamDefaults = {};
+    document.querySelectorAll('.film-chip').forEach(c => c.classList.remove('selected'));
+    document.getElementById('filmActiveBadge').classList.remove('visible');
+    document.getElementById('clearFilmBtn').style.display = 'none';
+    document.getElementById('exportFilmLutBtn').style.display = 'none';
+    document.getElementById('filmStrengthRow').style.display = 'none';
+    document.getElementById('applyFilmBtn').disabled = true;
+    document.getElementById('filmParams').classList.remove('visible');
+    updateExportLutOptions();
+    targets.forEach(t => {
+      if (t._matchedPreview) updateCardPreview(t.id, t._matchedPreview);
+    });
+    toast('Film removed', 'success');
+  };
+
+  // Patch clearAll to reset adj panel
+  const _origClearAll = clearAll;
+  clearAll = async function() {
+    resetAllAdj();
+    document.getElementById('adjActiveDot').classList.remove('visible');
+    document.getElementById('filmParams').classList.remove('visible');
+    filmParamValues = {};
+    filmParamDefaults = {};
+    await _origClearAll();
+  };
+
+  // Init on load
+  initFilmStocks();
+
+  // --- Drag & Drop ---
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.add('drag-over');
+  }
+  function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('drag-over');
+  }
+  function handleDrop(e, role) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files);
+    if (role === 'reference') {
+      uploadFile(files[0], 'reference');
+    } else {
+      files.forEach(f => uploadFile(f, 'target'));
+    }
+  }
+  function handleFileSelect(e, role) {
+    const files = Array.from(e.target.files);
+    if (role === 'reference') {
+      uploadFile(files[0], 'reference');
+    } else {
+      files.forEach(f => uploadFile(f, 'target'));
+    }
+    e.target.value = '';
+  }
+
+  // --- Upload ---
+  async function uploadFile(file, role) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('role', role);
+
+    if (role === 'target') {
+      addTargetPlaceholder(file.name);
+    }
+
+    try {
+      const resp = await fetch('/upload', { method: 'POST', body: formData });
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.detail || 'Upload failed');
+      }
+      const data = await resp.json();
+
+      if (role === 'reference') {
+        setReferencePreview(data);
+        hasReference = true;
+      } else {
+        targets.push(data);
+        updateTargetCard(file.name, data);
+      }
+      updateButtonStates();
+      toast(`${file.name} uploaded`, 'success');
+    } catch (err) {
+      toast(`Failed: ${err.message}`, 'error');
+      if (role === 'target') removeTargetPlaceholder(file.name);
+    }
+  }
+
+  // --- Reference Preview ---
+  function setReferencePreview(data) {
+    const zone = document.getElementById('refZone');
+    zone.classList.add('has-image');
+    zone.innerHTML = `
+      <div class="drop-preview"><img src="${data.preview}" alt="Reference"></div>
+      <div class="drop-filename">${data.filename}</div>
+      <div class="drop-dims">${data.width} × ${data.height}</div>
+    `;
+  }
+
+  // --- Target Cards ---
+  function addTargetPlaceholder(filename) {
+    const grid = document.getElementById('targetGrid');
+    const empty = document.getElementById('targetsEmpty');
+    const zone = document.getElementById('targetsZone');
+
+    empty.style.display = 'none';
+    grid.style.display = 'grid';
+    zone.classList.add('has-items');
+
+    const card = document.createElement('div');
+    card.className = 'target-card';
+    card.id = `card-placeholder-${CSS.escape(filename)}`;
+    card.innerHTML = `
+      <div class="card-image-wrap" style="display:flex;align-items:center;justify-content:center;">
+        <div class="spinner" style="width:32px;height:32px;border-width:2px;"></div>
+      </div>
+      <div class="card-info">
+        <div class="card-filename">${filename}</div>
+        <span class="card-status status-uploading">uploading...</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+
+  function updateTargetCard(filename, data) {
+    const placeholder = document.getElementById(`card-placeholder-${CSS.escape(filename)}`);
+    if (placeholder) {
+      placeholder.id = `card-${data.id}`;
+      placeholder.innerHTML = `
+        <div class="card-image-wrap">
+          <img src="${data.preview}" alt="${data.filename}">
+        </div>
+        <div class="card-info">
+          <div class="card-filename" title="${data.filename}">${data.filename}</div>
+          <div class="card-actions">
+            <span class="card-status status-ready">ready</span>
+            <button class="btn btn-sm btn-danger" onclick="removeTarget('${data.id}')">✕</button>
+          </div>
+        </div>
+      `;
+    }
+    document.getElementById('targetCountNum').textContent = targets.length;
+  }
+
+  function removeTargetPlaceholder(filename) {
+    const el = document.getElementById(`card-placeholder-${CSS.escape(filename)}`);
+    if (el) el.remove();
+  }
+
+  async function removeTarget(id) {
+    await fetch(`/target/${id}`, { method: 'DELETE' });
+    targets = targets.filter(t => t.id !== id);
+    const card = document.getElementById(`card-${id}`);
+    if (card) card.remove();
+    document.getElementById('targetCountNum').textContent = targets.length;
+    if (targets.length === 0) {
+      document.getElementById('targetsEmpty').style.display = 'flex';
+      document.getElementById('targetGrid').style.display = 'none';
+      document.getElementById('targetsZone').classList.remove('has-items');
+    }
+    updateButtonStates();
+  }
+
+  // --- Method Toggle ---
+  function setMethod(btn) {
+    document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMethod = btn.dataset.method;
+  }
+
+  // --- Match ---
+  async function runMatch() {
+    if (!hasReference || targets.length === 0) return;
+    showProcessing('Matching colors...', `Processing ${targets.length} photo${targets.length > 1 ? 's' : ''} sequentially`);
+
+    const formData = new FormData();
+    formData.append('method', currentMethod);
+    formData.append('strength', document.getElementById('strengthSlider').value);
+
+    try {
+      const resp = await fetch('/match', { method: 'POST', body: formData });
+      if (!resp.ok) throw new Error('Match failed');
+      const data = await resp.json();
+
+      data.results.forEach(r => {
+        if (r.error) {
+          toast(`Error on ${r.filename}: ${r.error}`, 'error');
+          return;
+        }
+        // Store matched preview URL on target for film revert
+        const tgt = targets.find(t => t.id === r.id);
+        if (tgt) tgt._matchedPreview = r.matched_preview;
+
+        const card = document.getElementById(`card-${r.id}`);
+        if (card) {
+          const imgWrap = card.querySelector('.card-image-wrap');
+          imgWrap.innerHTML = `
+            <div class="comparison-container" onmousedown="startSlider(event, this)" onmousemove="moveSlider(event, this)" ontouchstart="startSlider(event, this)" ontouchmove="moveSlider(event, this)">
+              <img src="${r.original_preview}" class="img-original" alt="Original">
+              <img src="${r.matched_preview}" class="img-matched" alt="Matched" style="clip-path: inset(0 50% 0 0);">
+              <div class="comparison-slider" style="left:50%;"></div>
+              <div class="comparison-label label-after">matched</div>
+              <div class="comparison-label label-before">original</div>
+            </div>
+          `;
+          const status = card.querySelector('.card-status');
+          if (status) {
+            status.className = 'card-status status-matched';
+            status.textContent = 'matched';
+          }
+        }
+      });
+
+      hasMatched = true;
+      updateButtonStates();
+      toast('All photos matched!', 'success');
+    } catch (err) {
+      toast(`Match failed: ${err.message}`, 'error');
+    } finally {
+      hideProcessing();
+    }
+  }
+
+  // --- Comparison Slider ---
+  let sliderActive = false;
+  function startSlider(e, container) {
+    sliderActive = true;
+    moveSlider(e, container);
+  }
+  document.addEventListener('mouseup', () => sliderActive = false);
+  document.addEventListener('touchend', () => sliderActive = false);
+
+  function moveSlider(e, container) {
+    if (!sliderActive) return;
+    e.preventDefault();
+    const rect = container.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    let x = (clientX - rect.left) / rect.width;
+    x = Math.max(0.05, Math.min(0.95, x));
+    const pct = x * 100;
+    container.querySelector('.img-matched').style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+    container.querySelector('.comparison-slider').style.left = pct + '%';
+  }
+
+  // --- Export ---
+  function openExportModal() {
+    document.getElementById('exportModal').classList.add('open');
+  }
+  function closeExportModal() {
+    document.getElementById('exportModal').classList.remove('open');
+  }
+
+  async function exportAll(format) {
+    closeExportModal();
+    let label = format === 'jpeg' ? 'JPEG' : format === 'tiff' ? '16-bit TIFF' : 'Layered TIFF';
+    showProcessing(`Exporting ${label}...`, 'Full-resolution processing — this may take a while for RAW files');
+
+    const formData = new FormData();
+    formData.append('format', format);
+
+    try {
+      const resp = await fetch('/export-all', { method: 'POST', body: formData });
+      if (!resp.ok) throw new Error('Export failed');
+      const data = await resp.json();
+
+      triggerDownload(data.download, 'lookmatch_export.zip');
+
+      toast(`Exported ${data.files.length} files as ${label}`, 'success');
+    } catch (err) {
+      toast(`Export failed: ${err.message}`, 'error');
+    } finally {
+      hideProcessing();
+    }
+  }
+
+  // --- Save Profile ---
+  async function saveProfile() {
+    if (!hasReference) {
+      toast('Upload a reference image first', 'error');
+      return;
+    }
+    try {
+      const resp = await fetch('/save-profile', { method: 'POST' });
+      if (!resp.ok) throw new Error('Save failed');
+      const data = await resp.json();
+      const a = document.createElement('a');
+      a.href = data.download;
+      a.download = data.download.split('/').pop();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast('Look profile saved!', 'success');
+    } catch (err) {
+      toast(`Failed: ${err.message}`, 'error');
+    }
+  }
+
+  // --- Clear All ---
+  async function clearAll() {
+    await fetch('/clear', { method: 'POST' });
+    targets = [];
+    hasReference = false;
+    hasMatched = false;
+
+    // Reset reference zone
+    const refZone = document.getElementById('refZone');
+    refZone.classList.remove('has-image');
+    refZone.innerHTML = `
+      <div class="drop-icon">📷</div>
+      <div class="drop-text">Drop your <strong>reference</strong> photo here<br>or click to browse</div>
+      <div class="drop-dims">CR3 · ARW · DNG · TIFF · JPEG · PNG</div>
+    `;
+
+    // Reset targets
+    document.getElementById('targetGrid').innerHTML = '';
+    document.getElementById('targetGrid').style.display = 'none';
+    document.getElementById('targetsEmpty').style.display = 'flex';
+    document.getElementById('targetsZone').classList.remove('has-items');
+    document.getElementById('targetCountNum').textContent = '0';
+
+    updateButtonStates();
+    toast('Session cleared', 'success');
+  }
+
+  // --- Helpers ---
+  function updateButtonStates() {
+    document.getElementById('matchBtn').disabled = !(hasReference && targets.length > 0);
+    document.getElementById('exportBtn').disabled = !hasMatched;
+  }
+
+  function showProcessing(text, sub) {
+    document.getElementById('processingText').textContent = text;
+    document.getElementById('processingSub').textContent = sub;
+    document.getElementById('processingOverlay').classList.add('active');
+  }
+  function hideProcessing() {
+    document.getElementById('processingOverlay').classList.remove('active');
+  }
+
+  function toast(msg, type = '') {
+    const container = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `${type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'} ${msg}`;
+    container.appendChild(t);
+    setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transition = 'opacity 0.3s';
+      setTimeout(() => t.remove(), 300);
+    }, 3500);
+  }
+</script>
+</body>
+</html>
