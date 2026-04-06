@@ -14,8 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Railway / Render inject $PORT at runtime
-ENV PORT=8000
-EXPOSE 8000
+# Railway injects $PORT at runtime (default 8080)
+EXPOSE 8080
 
 CMD ["python3", "main.py"]
