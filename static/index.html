@@ -764,9 +764,9 @@
       <div class="drop-zone" id="refZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'reference')" onclick="document.getElementById('refInput').click()">
         <div class="drop-icon">📷</div>
         <div class="drop-text">Drop your <strong>reference</strong> photo here<br>or click to browse</div>
-        <div class="drop-dims">CR3 · ARW · DNG · TIFF · JPEG · PNG</div>
+        <div class="drop-dims">Any RAW · HEIC · JPEG · PNG · TIFF · AVIF</div>
       </div>
-      <input type="file" class="hidden-input" id="refInput" accept=".cr3,.arw,.nef,.dng,.tif,.tiff,.jpg,.jpeg,.png,.CR3,.ARW,.NEF,.DNG" onchange="handleFileSelect(event, 'reference')">
+      <input type="file" class="hidden-input" id="refInput" accept=".jpg,.jpeg,.png,.tif,.tiff,.bmp,.webp,.gif,.psd,.avif,.heic,.heif,.cr3,.cr2,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.orf,.raf,.rw2,.rwl,.pef,.ptx,.3fr,.srw,.mrw,.dcr,.kdc,.x3f,.erf,.bay,.mos,.iiq,image/*" onchange="handleFileSelect(event, 'reference')">
     </div>
 
     <!-- Controls -->
@@ -994,14 +994,14 @@
         </div>
       </div>
       <button class="btn btn-sm" onclick="document.getElementById('targetInput').click()">+ Add Photos</button>
-      <input type="file" class="hidden-input" id="targetInput" multiple accept=".cr3,.arw,.nef,.dng,.tif,.tiff,.jpg,.jpeg,.png,.CR3,.ARW,.NEF,.DNG" onchange="handleFileSelect(event, 'target')">
+      <input type="file" class="hidden-input" id="targetInput" multiple accept=".jpg,.jpeg,.png,.tif,.tiff,.bmp,.webp,.gif,.psd,.avif,.heic,.heif,.cr3,.cr2,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.orf,.raf,.rw2,.rwl,.pef,.ptx,.3fr,.srw,.mrw,.dcr,.kdc,.x3f,.erf,.bay,.mos,.iiq,image/*" onchange="handleFileSelect(event, 'target')">
     </div>
 
     <div class="targets-drop" id="targetsZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'target')">
       <div class="targets-empty" id="targetsEmpty">
         <div class="drop-icon" style="width:56px;height:56px;font-size:24px;">📸</div>
         <div class="drop-text" style="font-size:15px;">Drop your <strong>target photos</strong> here</div>
-        <div class="drop-dims">Drag multiple files — CR3, ARW, DNG, TIFF, JPEG, PNG</div>
+        <div class="drop-dims">Drag multiple files — Any RAW, HEIC, JPEG, PNG, TIFF, AVIF</div>
       </div>
       <div class="target-grid" id="targetGrid" style="display:none;"></div>
     </div>
@@ -1818,7 +1818,7 @@
     refZone.innerHTML = `
       <div class="drop-icon">📷</div>
       <div class="drop-text">Drop your <strong>reference</strong> photo here<br>or click to browse</div>
-      <div class="drop-dims">CR3 · ARW · DNG · TIFF · JPEG · PNG</div>
+      <div class="drop-dims">Any RAW · HEIC · JPEG · PNG · TIFF · AVIF</div>
     `;
 
     // Reset targets

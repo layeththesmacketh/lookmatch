@@ -15,6 +15,8 @@ import cv2
 import numpy as np
 import rawpy
 from PIL import Image
+from pillow_heif import register_heif_opener
+register_heif_opener()
 from skimage.exposure import match_histograms
 import tifffile
 
@@ -35,9 +37,28 @@ for d in [UPLOAD_DIR, PREVIEW_DIR, EXPORT_DIR]:
     d.mkdir(exist_ok=True)
 
 PREVIEW_MAX_EDGE = 1600
-RAW_EXTENSIONS = {".cr3", ".cr2", ".arw", ".nef", ".dng", ".orf", ".raf", ".rw2"}
-IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"}
-ALL_EXTENSIONS = RAW_EXTENSIONS | IMAGE_EXTENSIONS
+RAW_EXTENSIONS = {
+    ".cr3", ".cr2", ".crw",          # Canon
+    ".nef", ".nrw",                   # Nikon
+    ".arw", ".srf", ".sr2",          # Sony
+    ".dng",                           # Adobe / Apple ProRAW / Leica / Hasselblad
+    ".orf",                           # Olympus / OM System
+    ".raf",                           # Fujifilm
+    ".rw2", ".rwl",                   # Panasonic / Leica
+    ".pef", ".ptx",                   # Pentax
+    ".3fr",                           # Hasselblad
+    ".srw",                           # Samsung
+    ".mrw",                           # Minolta
+    ".dcr", ".kdc",                   # Kodak
+    ".x3f",                           # Sigma
+    ".erf",                           # Epson
+    ".bay",                           # Casio
+    ".mos",                           # Leaf
+    ".iiq",                           # Phase One
+}
+HEIF_EXTENSIONS = {".heic", ".heif"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp", ".avif", ".psd", ".gif"}
+ALL_EXTENSIONS = RAW_EXTENSIONS | HEIF_EXTENSIONS | IMAGE_EXTENSIONS
 
 app = FastAPI(title="LookMatch")
 
@@ -96,28 +117,47 @@ session = {
 def read_image(filepath: str, half_size: bool = False) -> np.ndarray:
     """Read any supported image file, return BGR numpy array (16-bit for RAW, 8-bit for standard)."""
     ext = Path(filepath).suffix.lower()
+
     if ext in RAW_EXTENSIONS:
-        with rawpy.imread(filepath) as raw:
-            rgb = raw.postprocess(
-                use_camera_wb=True,
-                half_size=half_size,
-                no_auto_bright=True,
-                output_bps=16,
-                output_color=rawpy.ColorSpace.sRGB,
-            )
-        # rawpy returns RGB uint16, convert to BGR for OpenCV
-        bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
-        return bgr
-    else:
-        img = cv2.imread(filepath, cv2.IMREAD_UNCHANGED)
-        if img is None:
-            raise ValueError(f"Cannot read image: {filepath}")
-        # Ensure 3 channels
-        if len(img.shape) == 2:
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        elif img.shape[2] == 4:
-            img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-        return img
+        try:
+            with rawpy.imread(filepath) as raw:
+                rgb = raw.postprocess(
+                    use_camera_wb=True,
+                    half_size=half_size,
+                    no_auto_bright=True,
+                    output_bps=16,
+                    output_color=rawpy.ColorSpace.sRGB,
+                )
+            bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+            return bgr
+        except Exception as e:
+            raise ValueError(f"Failed to decode RAW file ({ext}): {e}")
+
+    if ext in HEIF_EXTENSIONS:
+        try:
+            pil_img = Image.open(filepath)
+            pil_img = pil_img.convert("RGB")
+            arr = np.array(pil_img)
+            return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+        except Exception as e:
+            raise ValueError(f"Failed to decode HEIC/HEIF file: {e}")
+
+    # Standard image formats (JPEG, PNG, TIFF, WebP, AVIF, etc.)
+    img = cv2.imread(filepath, cv2.IMREAD_UNCHANGED)
+    if img is None:
+        # Fallback to Pillow (handles AVIF, PSD, GIF, and edge cases cv2 misses)
+        try:
+            pil_img = Image.open(filepath)
+            pil_img = pil_img.convert("RGB")
+            arr = np.array(pil_img)
+            img = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+        except Exception:
+            raise ValueError(f"Cannot read image ({ext}). File may be corrupted or unsupported.")
+    if len(img.shape) == 2:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    elif img.shape[2] == 4:
+        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+    return img
 
 
 def make_preview(img: np.ndarray, max_edge: int = PREVIEW_MAX_EDGE) -> np.ndarray:
@@ -685,7 +725,13 @@ async def upload_file(file: UploadFile = File(...), role: str = Form("target")):
         preview_name = save_preview(preview_img, file_id)
     except Exception as e:
         os.remove(save_path)
-        raise HTTPException(500, f"Failed to process image: {str(e)}")
+        if ext in RAW_EXTENSIONS:
+            detail = f"Failed to process RAW file '{file.filename}': {e}"
+        elif ext in HEIF_EXTENSIONS:
+            detail = f"Failed to process HEIC/HEIF file '{file.filename}': {e}"
+        else:
+            detail = f"Failed to process '{file.filename}' ({ext}): {e}"
+        raise HTTPException(500, detail)
 
     h, w = img.shape[:2]
     entry = {
